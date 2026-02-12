@@ -18,10 +18,10 @@ function angleFromPivot(pivotX, pivotY, pointerX, pointerY) {
 
 function App() {
   const [units, setUnits] = useState([
-    { id: 0, position: { x: 200, y: 220 }, rotation: 0, isSelected: false },
+    { id: 0, position: { x: 200, y: 220 }, rotation: 0, isSelected: false }/*,
     { id: 1, position: { x: 300, y: 220 }, rotation: 0, isSelected: false },
     { id: 2, position: { x: 400, y: 220 }, rotation: 0, isSelected: false },
-    { id: 3, position: { x: 500, y: 220 }, rotation: 0, isSelected: false }
+    { id: 3, position: { x: 500, y: 220 }, rotation: 0, isSelected: false }*/
   ])
 
   const [stageScale, setStageScale] = useState(1)
