@@ -367,7 +367,7 @@ function App() {
         esquina.
       </p>
 
-      <div className="view-controls">
+      <div className="view-controls"  hidden="true">
         <button type="button" onClick={handleResetView}>
           Recentrar tapete
         </button>
