@@ -1,0 +1,115 @@
+#root {
+  margin: 0;
+  padding: 0;
+  min-height: 100vh;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: linear-gradient(180deg, #1a1f1a 0%, #0f130f 100%);
+}
+
+.tactical-board-wrapper {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 1rem;
+  padding: 1.5rem;
+}
+
+.board-title {
+  margin: 0;
+  font-family: 'Segoe UI', system-ui, sans-serif;
+  font-size: 1.5rem;
+  font-weight: 700;
+  color: #c9a227;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+}
+
+.controls {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 1rem;
+  justify-content: center;
+  align-items: center;
+}
+
+.pivot-controls,
+.rotation-controls {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.5rem;
+  align-items: center;
+}
+
+.control-label {
+  font-size: 0.9rem;
+  color: #7a9e76;
+  margin-right: 0.25rem;
+}
+
+.controls button {
+  padding: 0.5rem 0.9rem;
+  font-size: 0.85rem;
+  border: 1px solid #3d5c3a;
+  border-radius: 4px;
+  background: #2d4a2a;
+  color: #c9a227;
+  cursor: pointer;
+  transition: background 0.15s, border-color 0.15s;
+}
+
+.controls button:hover {
+  background: #3d5c3a;
+  border-color: #7a9e76;
+}
+
+.controls button.active {
+  background: #3d5c3a;
+  border-color: #c9a227;
+  font-weight: 600;
+}
+
+.board-hint {
+  margin: 0;
+  font-size: 0.85rem;
+  color: #6b8f67;
+}
+
+.view-controls {
+  margin-bottom: 0.5rem;
+}
+
+.view-controls button {
+  padding: 0.35rem 0.8rem;
+  font-size: 0.8rem;
+  border: 1px solid #3d5c3a;
+  border-radius: 4px;
+  background: #283845;
+  color: #e0f7fa;
+  cursor: pointer;
+  transition: background 0.15s, border-color 0.15s;
+}
+
+.view-controls button:hover {
+  background: #355264;
+  border-color: #4dd0e1;
+}
+
+.stage-container {
+  border: 3px solid #3d5c3a;
+  border-radius: 4px;
+  box-shadow:
+    0 0 0 1px #1e3320,
+    inset 0 0 60px rgba(0, 0, 0, 0.4),
+    0 8px 24px rgba(0, 0, 0, 0.5);
+  background: #05080d; /* fondo oscuro neutro, distinto del tapete */
+  padding: 8px;
+}
+
+.selected-info {
+  margin: 0;
+  font-size: 0.9rem;
+  color: #c9a227;
+  font-weight: 600;
+}
