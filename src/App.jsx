@@ -361,7 +361,7 @@ function App() {
   return (
     <div className="tactical-board-wrapper">
       <h1 className="board-title">Mesa táctica</h1>
-      <p className="board-hint">
+      <p className="board-hint" hidden="true">
         Arrastra la unidad para moverla. Usa los cuadrados de las esquinas
         delanteras para girar hacia delante (hasta 90°) alrededor de la otra
         esquina.
