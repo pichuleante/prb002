@@ -9,7 +9,6 @@ const MAP_HEIGHT = UNIT_WIDTH * 20
 const VIEW_WIDTH = 700
 const VIEW_HEIGHT = 500
 
-// Calcula ángulo (en grados) donde 0º = hacia arriba desde un pivote dado
 function angleFromPivot(pivotX, pivotY, pointerX, pointerY) {
   const dx = pointerX - pivotX
   const dy = pointerY - pivotY
@@ -18,43 +17,40 @@ function angleFromPivot(pivotX, pivotY, pointerX, pointerY) {
 }
 
 function App() {
-  // Posición de la esquina superior izquierda (sistema base de la unidad)
-  const [position, setPosition] = useState({ x: 200, y: 220 })
-  // Rotación actual en grados (0º a 90º hacia delante)
-  const [rotation, setRotation] = useState(0)
-  // Estado de selección de la unidad
-  const [isSelected, setIsSelected] = useState(false)
-  // Zoom y pan del área de juego
+  const [units, setUnits] = useState([
+    { id: 0, position: { x: 200, y: 220 }, rotation: 0, isSelected: false },
+    { id: 1, position: { x: 300, y: 220 }, rotation: 0, isSelected: false }
+  ])
+
   const [stageScale, setStageScale] = useState(1)
   const [stagePosition, setStagePosition] = useState({ x: 0, y: 0 })
 
-  // Estado de rotación por arrastre
   const [rotationDrag, setRotationDrag] = useState({
     active: false,
-    pivot: /** @type {'left' | 'right' | null} */ (null),
+    unitId: null,
+    pivot: null,
     startAngle: 0,
     startRotation: 0,
     pivotX: 0,
     pivotY: 0,
   })
 
-  // Estado de avance por arrastre
   const [advanceDrag, setAdvanceDrag] = useState({
     active: false,
+    unitId: null,
     startPointer: { x: 0, y: 0 },
     startPosition: { x: 0, y: 0 },
     rotationAtStart: 0,
   })
 
-  // Estado de deslizamiento lateral por arrastre
   const [slideDrag, setSlideDrag] = useState({
     active: false,
+    unitId: null,
     startPointer: { x: 0, y: 0 },
     startPosition: { x: 0, y: 0 },
     rotationAtStart: 0,
   })
 
-  // Zoom con rueda del ratón
   const handleWheel = useCallback(
     (e) => {
       e.evt.preventDefault()
@@ -70,10 +66,8 @@ function App() {
       }
 
       const direction = e.evt.deltaY > 0 ? 1 : -1
-      let newScale =
-        direction > 0 ? oldScale / scaleBy : oldScale * scaleBy
+      let newScale = direction > 0 ? oldScale / scaleBy : oldScale * scaleBy
 
-      // Limitar zoom
       if (newScale < 0.3) newScale = 0.3
       if (newScale > 3) newScale = 3
 
@@ -88,102 +82,90 @@ function App() {
     [stageScale, stagePosition.x, stagePosition.y]
   )
 
-  const handleDragEnd = useCallback((e) => {
+  const handleDragEnd = useCallback((unitId, e) => {
     const node = e.target
-    setPosition({ x: node.x(), y: node.y() })
+    setUnits(prev => prev.map(unit =>
+      unit.id === unitId
+        ? { ...unit, position: { x: node.x(), y: node.y() } }
+        : unit
+    ))
   }, [])
 
-  // Movimiento del puntero (rotación + avance + deslizamiento según el selector activo)
   const handlePointerMove = useCallback(
     (e) => {
       const stage = e.target.getStage()
       const pointer = stage?.getPointerPosition()
       if (!stage || !pointer) return
 
-      // Convertimos posición del puntero a coordenadas del tapete (independientes de zoom/pan)
       const pointerWorldX = (pointer.x - stagePosition.x) / stageScale
       const pointerWorldY = (pointer.y - stagePosition.y) / stageScale
 
-      // 1) Rotación
-      if (rotationDrag.active && rotationDrag.pivot) {
+      if (rotationDrag.active && rotationDrag.pivot && rotationDrag.unitId !== null) {
         const { pivotX, pivotY } = rotationDrag
-        const angleNow = angleFromPivot(
-          pivotX,
-          pivotY,
-          pointerWorldX,
-          pointerWorldY
-        )
+        const angleNow = angleFromPivot(pivotX, pivotY, pointerWorldX, pointerWorldY)
 
-        // Cambio de ángulo relativo al inicio del arrastre
         const rawDelta = angleNow - rotationDrag.startAngle
-        // Normalizamos el delta a [-180, 180] para evitar saltos al cruzar 180°/360°
         let delta = ((rawDelta + 540) % 360) - 180
 
-        // Limitación del sentido y amplitud DEL DELTA según el pivote
         if (rotationDrag.pivot === 'right') {
-          // Pivote = esquina delantera izquierda
-          // Solo se permite giro antihorario (hacia la izquierda): delta ∈ [-90º, 0º]
           if (delta > 0) delta = 0
           if (delta < -90) delta = -90
         } else {
-          // Pivote = esquina delantera derecha
-          // Solo se permite giro horario (hacia la derecha): delta ∈ [0º, 90º]
           if (delta < 0) delta = 0
           if (delta > 90) delta = 90
         }
 
         const next = rotationDrag.startRotation + delta
 
-        // Si el pivote es la esquina derecha, recalculamos la posición
-        // para que esa esquina permanezca fija.
-        if (rotationDrag.pivot === 'left') {
-          const newRad = (next * Math.PI) / 180
+        setUnits(prev => prev.map(unit => {
+          if (unit.id !== rotationDrag.unitId) return unit
 
-          const rightX = rotationDrag.pivotX
-          const rightY = rotationDrag.pivotY
+          let newPosition = unit.position
 
-          const newLeftX = rightX - UNIT_WIDTH * Math.cos(newRad)
-          const newLeftY = rightY - UNIT_WIDTH * Math.sin(newRad)
+          if (rotationDrag.pivot === 'left') {
+            const newRad = (next * Math.PI) / 180
+            const rightX = rotationDrag.pivotX
+            const rightY = rotationDrag.pivotY
+            const newLeftX = rightX - UNIT_WIDTH * Math.cos(newRad)
+            const newLeftY = rightY - UNIT_WIDTH * Math.sin(newRad)
+            newPosition = { x: newLeftX, y: newLeftY }
+          }
 
-          setPosition({ x: newLeftX, y: newLeftY })
-        }
-
-        setRotation(next)
+          return { ...unit, rotation: next, position: newPosition }
+        }))
         return
       }
 
-      // 2) Avance en línea recta hacia delante
-      if (advanceDrag.active) {
+      if (advanceDrag.active && advanceDrag.unitId !== null) {
         const rad = (advanceDrag.rotationAtStart * Math.PI) / 180
-        // Vector de avance (frente de la unidad)
         const fx = Math.sin(rad)
         const fy = -Math.cos(rad)
 
         const dx = pointerWorldX - advanceDrag.startPointer.x
         const dy = pointerWorldY - advanceDrag.startPointer.y
 
-        // Proyección del movimiento del ratón sobre la dirección de avance
         let t = dx * fx + dy * fy
-        if (t < 0) t = 0 // no permitir retroceder
+        if (t < 0) t = 0
 
         const newX = advanceDrag.startPosition.x + fx * t
         const newY = advanceDrag.startPosition.y + fy * t
 
-        setPosition({ x: newX, y: newY })
+        setUnits(prev => prev.map(unit =>
+          unit.id === advanceDrag.unitId
+            ? { ...unit, position: { x: newX, y: newY } }
+            : unit
+        ))
         return
       }
 
-      // 3) Deslizamiento lateral (izquierda / derecha)
-      if (slideDrag.active) {
+      if (slideDrag.active && slideDrag.unitId !== null) {
         const rad = (slideDrag.rotationAtStart * Math.PI) / 180
-        // Vector lateral (derecha de la unidad)
         const sx = Math.cos(rad)
         const sy = Math.sin(rad)
 
         const dx = pointerWorldX - slideDrag.startPointer.x
         const dy = pointerWorldY - slideDrag.startPointer.y
 
-        // Proyección del movimiento del ratón sobre la dirección lateral
         let t = dx * sx + dy * sy
         const maxOffset = UNIT_WIDTH
         if (t > maxOffset) t = maxOffset
@@ -192,160 +174,189 @@ function App() {
         const newX = slideDrag.startPosition.x + sx * t
         const newY = slideDrag.startPosition.y + sy * t
 
-        setPosition({ x: newX, y: newY })
+        setUnits(prev => prev.map(unit =>
+          unit.id === slideDrag.unitId
+            ? { ...unit, position: { x: newX, y: newY } }
+            : unit
+        ))
       }
     },
-    [
-      rotation,
-      rotationDrag,
-      advanceDrag,
-      slideDrag,
-      position.x,
-      position.y,
-      stageScale,
-      stagePosition.x,
-      stagePosition.y,
-    ]
+    [rotationDrag, advanceDrag, slideDrag, stageScale, stagePosition.x, stagePosition.y]
   )
 
   const startRotationDrag = useCallback(
-    (e, pivot) => {
+    (unitId, e, pivot) => {
       e.cancelBubble = true
 
       const stage = e.target.getStage()
       const pointer = stage?.getPointerPosition()
       if (!pointer) return
 
+      const unit = units.find(u => u.id === unitId)
+      if (!unit) return
+
       const pointerWorldX = (pointer.x - stagePosition.x) / stageScale
       const pointerWorldY = (pointer.y - stagePosition.y) / stageScale
 
-      const rad = (rotation * Math.PI) / 180
-      let pivotX = position.x
-      let pivotY = position.y
+      const rad = (unit.rotation * Math.PI) / 180
+      let pivotX = unit.position.x
+      let pivotY = unit.position.y
 
       if (pivot === 'left') {
-        // Pivote = esquina delantera derecha
-        pivotX = position.x + UNIT_WIDTH * Math.cos(rad)
-        pivotY = position.y + UNIT_WIDTH * Math.sin(rad)
+        pivotX = unit.position.x + UNIT_WIDTH * Math.cos(rad)
+        pivotY = unit.position.y + UNIT_WIDTH * Math.sin(rad)
       }
-      // Si pivot === 'right', el pivote es la esquina delantera izquierda
 
       const startAngle = angleFromPivot(pivotX, pivotY, pointerWorldX, pointerWorldY)
 
       setRotationDrag({
         active: true,
+        unitId,
         pivot,
         startAngle,
-        startRotation: rotation,
+        startRotation: unit.rotation,
         pivotX,
         pivotY,
       })
     },
-    [position.x, position.y, rotation, stageScale, stagePosition.x, stagePosition.y]
+    [units, stageScale, stagePosition.x, stagePosition.y]
   )
 
   const startAdvanceDrag = useCallback(
-    (e) => {
+    (unitId, e) => {
       e.cancelBubble = true
 
       const stage = e.target.getStage()
       const pointer = stage?.getPointerPosition()
       if (!pointer) return
+
+      const unit = units.find(u => u.id === unitId)
+      if (!unit) return
 
       const pointerWorldX = (pointer.x - stagePosition.x) / stageScale
       const pointerWorldY = (pointer.y - stagePosition.y) / stageScale
 
       setAdvanceDrag({
         active: true,
+        unitId,
         startPointer: { x: pointerWorldX, y: pointerWorldY },
-        startPosition: { x: position.x, y: position.y },
-        rotationAtStart: rotation,
+        startPosition: { x: unit.position.x, y: unit.position.y },
+        rotationAtStart: unit.rotation,
       })
     },
-    [position.x, position.y, rotation, stageScale, stagePosition.x, stagePosition.y]
+    [units, stageScale, stagePosition.x, stagePosition.y]
   )
 
   const startSlideDrag = useCallback(
-    (e) => {
+    (unitId, e) => {
       e.cancelBubble = true
 
       const stage = e.target.getStage()
       const pointer = stage?.getPointerPosition()
       if (!pointer) return
 
+      const unit = units.find(u => u.id === unitId)
+      if (!unit) return
+
       const pointerWorldX = (pointer.x - stagePosition.x) / stageScale
       const pointerWorldY = (pointer.y - stagePosition.y) / stageScale
 
       setSlideDrag({
         active: true,
+        unitId,
         startPointer: { x: pointerWorldX, y: pointerWorldY },
-        startPosition: { x: position.x, y: position.y },
-        rotationAtStart: rotation,
+        startPosition: { x: unit.position.x, y: unit.position.y },
+        rotationAtStart: unit.rotation,
       })
     },
-    [position.x, position.y, rotation, stageScale, stagePosition.x, stagePosition.y]
+    [units, stageScale, stagePosition.x, stagePosition.y]
   )
 
   const handlePointerEnd = useCallback(() => {
-    setRotationDrag((prev) => ({ ...prev, active: false, pivot: null }))
-    setAdvanceDrag((prev) => ({ ...prev, active: false }))
-    setSlideDrag((prev) => ({ ...prev, active: false }))
+    setRotationDrag((prev) => ({ ...prev, active: false, unitId: null, pivot: null }))
+    setAdvanceDrag((prev) => ({ ...prev, active: false, unitId: null }))
+    setSlideDrag((prev) => ({ ...prev, active: false, unitId: null }))
   }, [])
 
-  // Variación izquierda: 90º antihorario dejando la esquina delantera derecha
-  // en la posición donde estaba la esquina delantera izquierda antes del giro
-  const handleVariationLeft = useCallback(() => {
-    const nextRotation = rotation - 90
-    const radNext = (nextRotation * Math.PI) / 180
+  const handleVariationLeft = useCallback((unitId) => {
+    setUnits(prev => prev.map(unit => {
+      if (unit.id !== unitId) return unit
 
-    // Queremos que la nueva esquina delantera derecha coincida con la
-    // esquina delantera izquierda actual (position).
-    // R' = L' + W * dir(nextRotation) = L_actual  =>  L' = L_actual - W * dir(nextRotation)
-    const newLeftX = position.x - UNIT_WIDTH * Math.cos(radNext)
-    const newLeftY = position.y - UNIT_WIDTH * Math.sin(radNext)
+      const nextRotation = unit.rotation - 90
+      const radNext = (nextRotation * Math.PI) / 180
 
-    setRotation(nextRotation)
-    setPosition({ x: newLeftX, y: newLeftY })
-  }, [position.x, position.y, rotation])
+      const newLeftX = unit.position.x - UNIT_WIDTH * Math.cos(radNext)
+      const newLeftY = unit.position.y - UNIT_WIDTH * Math.sin(radNext)
 
-  // Variación derecha: 90º horario manteniendo la esquina delantera derecha
-  // y haciendo que la esquina delantera izquierda ocupe su posición anterior
-  const handleVariationRight = useCallback(() => {
-    const theta = (rotation * Math.PI) / 180
-    const rightX = position.x + UNIT_WIDTH * Math.cos(theta)
-    const rightY = position.y + UNIT_WIDTH * Math.sin(theta)
+      return {
+        ...unit,
+        rotation: nextRotation,
+        position: { x: newLeftX, y: newLeftY }
+      }
+    }))
+  }, [])
 
-    const nextRotation = rotation + 90
+  const handleVariationRight = useCallback((unitId) => {
+    setUnits(prev => prev.map(unit => {
+      if (unit.id !== unitId) return unit
 
-    // Nueva esquina izquierda pasa a ser donde estaba la esquina derecha
-    setRotation(nextRotation)
-    setPosition({ x: rightX, y: rightY })
-  }, [position.x, position.y, rotation])
+      const theta = (unit.rotation * Math.PI) / 180
+      const rightX = unit.position.x + UNIT_WIDTH * Math.cos(theta)
+      const rightY = unit.position.y + UNIT_WIDTH * Math.sin(theta)
 
-  // Media vuelta: 180º, colocando el borde frontal donde estaba el borde trasero
-  const handleHalfTurn = useCallback(() => {
-    const theta = (rotation * Math.PI) / 180
+      const nextRotation = unit.rotation + 90
 
-    // Esquina trasera derecha antes de la maniobra
-    const backRightX =
-      position.x +
-      UNIT_HEIGHT * -Math.sin(theta) +
-      UNIT_WIDTH * Math.cos(theta)
-    const backRightY =
-      position.y + UNIT_HEIGHT * Math.cos(theta) + UNIT_WIDTH * Math.sin(theta)
+      return {
+        ...unit,
+        rotation: nextRotation,
+        position: { x: rightX, y: rightY }
+      }
+    }))
+  }, [])
 
-    const nextRotation = rotation + 180
+  const handleHalfTurn = useCallback((unitId) => {
+    setUnits(prev => prev.map(unit => {
+      if (unit.id !== unitId) return unit
 
-    // Tras girar 180º, la nueva esquina delantera izquierda pasa a ser
-    // la antigua esquina trasera derecha
-    setRotation(nextRotation)
-    setPosition({ x: backRightX, y: backRightY })
-  }, [position.x, position.y, rotation])
+      const theta = (unit.rotation * Math.PI) / 180
+
+      const backRightX =
+        unit.position.x +
+        UNIT_HEIGHT * -Math.sin(theta) +
+        UNIT_WIDTH * Math.cos(theta)
+      const backRightY =
+        unit.position.y + UNIT_HEIGHT * Math.cos(theta) + UNIT_WIDTH * Math.sin(theta)
+
+      const nextRotation = unit.rotation + 180
+
+      return {
+        ...unit,
+        rotation: nextRotation,
+        position: { x: backRightX, y: backRightY }
+      }
+    }))
+  }, [])
 
   const handleResetView = useCallback(() => {
     setStageScale(1)
     setStagePosition({ x: 0, y: 0 })
   }, [])
+
+  const handleUnitSelect = useCallback((unitId) => {
+    setUnits(prev => prev.map(unit => ({
+      ...unit,
+      isSelected: unit.id === unitId
+    })))
+  }, [])
+
+  const handleDeselectAll = useCallback(() => {
+    setUnits(prev => prev.map(unit => ({
+      ...unit,
+      isSelected: false
+    })))
+  }, [])
+
+  const isDraggingAny = rotationDrag.active || advanceDrag.active || slideDrag.active
 
   return (
     <div className="tactical-board-wrapper">
@@ -381,11 +392,10 @@ function App() {
           onMouseUp={handlePointerEnd}
           onTouchEnd={handlePointerEnd}
           onMouseLeave={handlePointerEnd}
-          onMouseDown={() => setIsSelected(false)}
-          onTouchStart={() => setIsSelected(false)}
+          onMouseDown={handleDeselectAll}
+          onTouchStart={handleDeselectAll}
         >
           <Layer>
-            {/* Tapete liso, sin casillas */}
             <Rect
               x={0}
               y={0}
@@ -395,172 +405,165 @@ function App() {
               listening={false}
             />
 
-            {/* Unidad; la rotación base se calcula alrededor de la esquina superior izquierda */}
-            <Group
-              x={position.x}
-              y={position.y}
-              rotation={rotation}
-              offset={{ x: 0, y: 0 }}
-              draggable={!rotationDrag.active && !advanceDrag.active && !slideDrag.active}
-              onDragEnd={handleDragEnd}
-              onMouseDown={(e) => {
-                e.cancelBubble = true
-                setIsSelected(true)
-              }}
-              onTouchStart={(e) => {
-                e.cancelBubble = true
-                setIsSelected(true)
-              }}
-            >
-              {/* Cuerpo de la unidad */}
-              <Rect
-                x={0}
-                y={0}
-                width={UNIT_WIDTH}
-                height={UNIT_HEIGHT}
-                fill="#3d5c3a"
-                stroke={isSelected ? '#ffeb3b' : '#c9a227'}
-                strokeWidth={isSelected ? 3 : 2}
-              />
+            {units.map(unit => (
+              <Group
+                key={unit.id}
+                x={unit.position.x}
+                y={unit.position.y}
+                rotation={unit.rotation}
+                offset={{ x: 0, y: 0 }}
+                draggable={!isDraggingAny}
+                onDragEnd={(e) => handleDragEnd(unit.id, e)}
+                onMouseDown={(e) => {
+                  e.cancelBubble = true
+                  handleUnitSelect(unit.id)
+                }}
+                onTouchStart={(e) => {
+                  e.cancelBubble = true
+                  handleUnitSelect(unit.id)
+                }}
+              >
+                <Rect
+                  x={0}
+                  y={0}
+                  width={UNIT_WIDTH}
+                  height={UNIT_HEIGHT}
+                  fill="#3d5c3a"
+                  stroke={unit.isSelected ? '#ffeb3b' : '#c9a227'}
+                  strokeWidth={unit.isSelected ? 3 : 2}
+                />
 
-              {/* Marca de frente (centro del borde superior) */}
-              <Rect
-                x={UNIT_WIDTH / 2 - 4}
-                y={-8}
-                width={8}
-                height={8}
-                fill="#c9a227"
-                listening={false}
-              />
+                <Rect
+                  x={UNIT_WIDTH / 2 - 4}
+                  y={-8}
+                  width={8}
+                  height={8}
+                  fill="#c9a227"
+                  listening={false}
+                />
 
-              {isSelected && (
-                <>
-                  {/* Selector de rotación en esquina superior derecha (giro sobre esquina izquierda) */}
-                  <Rect
-                    x={UNIT_WIDTH - 10}
-                    y={-10}
-                    width={16}
-                    height={16}
-                    fill={
-                      rotationDrag.active && rotationDrag.pivot === 'right'
-                        ? '#ffd54f'
-                        : '#c9a227'
-                    }
-                    stroke="#000000"
-                    strokeWidth={1}
-                    cornerRadius={3}
-                    onMouseDown={(evt) => startRotationDrag(evt, 'right')}
-                    onTouchStart={(evt) => startRotationDrag(evt, 'right')}
-                  />
+                {unit.isSelected && (
+                  <>
+                    <Rect
+                      x={UNIT_WIDTH - 10}
+                      y={-10}
+                      width={16}
+                      height={16}
+                      fill={
+                        rotationDrag.active && rotationDrag.unitId === unit.id && rotationDrag.pivot === 'right'
+                          ? '#ffd54f'
+                          : '#c9a227'
+                      }
+                      stroke="#000000"
+                      strokeWidth={1}
+                      cornerRadius={3}
+                      onMouseDown={(evt) => startRotationDrag(unit.id, evt, 'right')}
+                      onTouchStart={(evt) => startRotationDrag(unit.id, evt, 'right')}
+                    />
 
-                  {/* Selector de rotación en esquina superior izquierda (giro sobre esquina derecha) */}
-                  <Rect
-                    x={-6}
-                    y={-10}
-                    width={16}
-                    height={16}
-                    fill={
-                      rotationDrag.active && rotationDrag.pivot === 'left'
-                        ? '#ffd54f'
-                        : '#c9a227'
-                    }
-                    stroke="#000000"
-                    strokeWidth={1}
-                    cornerRadius={3}
-                    onMouseDown={(evt) => startRotationDrag(evt, 'left')}
-                    onTouchStart={(evt) => startRotationDrag(evt, 'left')}
-                  />
+                    <Rect
+                      x={-6}
+                      y={-10}
+                      width={16}
+                      height={16}
+                      fill={
+                        rotationDrag.active && rotationDrag.unitId === unit.id && rotationDrag.pivot === 'left'
+                          ? '#ffd54f'
+                          : '#c9a227'
+                      }
+                      stroke="#000000"
+                      strokeWidth={1}
+                      cornerRadius={3}
+                      onMouseDown={(evt) => startRotationDrag(unit.id, evt, 'left')}
+                      onTouchStart={(evt) => startRotationDrag(unit.id, evt, 'left')}
+                    />
 
-                  {/* Selector de avance en el centro del lado delantero */}
-                  <Rect
-                    x={UNIT_WIDTH / 2 - 6}
-                    y={-18}
-                    width={12}
-                    height={18}
-                    fill={advanceDrag.active ? '#80cbc4' : '#4dd0e1'}
-                    stroke="#000000"
-                    strokeWidth={1}
-                    cornerRadius={3}
-                    onMouseDown={startAdvanceDrag}
-                    onTouchStart={startAdvanceDrag}
-                  />
+                    <Rect
+                      x={UNIT_WIDTH / 2 - 6}
+                      y={-18}
+                      width={12}
+                      height={18}
+                      fill={advanceDrag.active && advanceDrag.unitId === unit.id ? '#80cbc4' : '#4dd0e1'}
+                      stroke="#000000"
+                      strokeWidth={1}
+                      cornerRadius={3}
+                      onMouseDown={(e) => startAdvanceDrag(unit.id, e)}
+                      onTouchStart={(e) => startAdvanceDrag(unit.id, e)}
+                    />
 
-                  {/* Selector de variación izquierda (centro del borde lateral izquierdo) */}
-                  <Rect
-                    x={-18}
-                    y={UNIT_HEIGHT / 2 - 9}
-                    width={14}
-                    height={18}
-                    fill="#ffab91"
-                    stroke="#000000"
-                    strokeWidth={1}
-                    cornerRadius={3}
-                    onMouseDown={(e) => {
-                      e.cancelBubble = true
-                      handleVariationLeft()
-                    }}
-                    onTouchStart={(e) => {
-                      e.cancelBubble = true
-                      handleVariationLeft()
-                    }}
-                  />
+                    <Rect
+                      x={-18}
+                      y={UNIT_HEIGHT / 2 - 9}
+                      width={14}
+                      height={18}
+                      fill="#ffab91"
+                      stroke="#000000"
+                      strokeWidth={1}
+                      cornerRadius={3}
+                      onMouseDown={(e) => {
+                        e.cancelBubble = true
+                        handleVariationLeft(unit.id)
+                      }}
+                      onTouchStart={(e) => {
+                        e.cancelBubble = true
+                        handleVariationLeft(unit.id)
+                      }}
+                    />
 
-                  {/* Selector de variación derecha (centro del borde lateral derecho) */}
-                  <Rect
-                    x={UNIT_WIDTH + 4}
-                    y={UNIT_HEIGHT / 2 - 9}
-                    width={14}
-                    height={18}
-                    fill="#ffab91"
-                    stroke="#000000"
-                    strokeWidth={1}
-                    cornerRadius={3}
-                    onMouseDown={(e) => {
-                      e.cancelBubble = true
-                      handleVariationRight()
-                    }}
-                    onTouchStart={(e) => {
-                      e.cancelBubble = true
-                      handleVariationRight()
-                    }}
-                  />
+                    <Rect
+                      x={UNIT_WIDTH + 4}
+                      y={UNIT_HEIGHT / 2 - 9}
+                      width={14}
+                      height={18}
+                      fill="#ffab91"
+                      stroke="#000000"
+                      strokeWidth={1}
+                      cornerRadius={3}
+                      onMouseDown={(e) => {
+                        e.cancelBubble = true
+                        handleVariationRight(unit.id)
+                      }}
+                      onTouchStart={(e) => {
+                        e.cancelBubble = true
+                        handleVariationRight(unit.id)
+                      }}
+                    />
 
-                  {/* Selector de media vuelta (centro del borde trasero) */}
-                  <Rect
-                    x={UNIT_WIDTH / 2 - 6}
-                    y={UNIT_HEIGHT + 4}
-                    width={12}
-                    height={18}
-                    fill="#ce93d8"
-                    stroke="#000000"
-                    strokeWidth={1}
-                    cornerRadius={3}
-                    onMouseDown={(e) => {
-                      e.cancelBubble = true
-                      handleHalfTurn()
-                    }}
-                    onTouchStart={(e) => {
-                      e.cancelBubble = true
-                      handleHalfTurn()
-                    }}
-                  />
+                    <Rect
+                      x={UNIT_WIDTH / 2 - 6}
+                      y={UNIT_HEIGHT + 4}
+                      width={12}
+                      height={18}
+                      fill="#ce93d8"
+                      stroke="#000000"
+                      strokeWidth={1}
+                      cornerRadius={3}
+                      onMouseDown={(e) => {
+                        e.cancelBubble = true
+                        handleHalfTurn(unit.id)
+                      }}
+                      onTouchStart={(e) => {
+                        e.cancelBubble = true
+                        handleHalfTurn(unit.id)
+                      }}
+                    />
 
-                  {/* Selector de deslizamiento lateral (centro de la unidad) */}
-                  <Rect
-                    x={UNIT_WIDTH / 2 - 6}
-                    y={UNIT_HEIGHT / 2 - 6}
-                    width={12}
-                    height={12}
-                    fill={slideDrag.active ? '#ffeb3b' : '#90caf9'}
-                    stroke="#000000"
-                    strokeWidth={1}
-                    cornerRadius={3}
-                    onMouseDown={startSlideDrag}
-                    onTouchStart={startSlideDrag}
-                  />
-                </>
-              )}
-            </Group>
+                    <Rect
+                      x={UNIT_WIDTH / 2 - 6}
+                      y={UNIT_HEIGHT / 2 - 6}
+                      width={12}
+                      height={12}
+                      fill={slideDrag.active && slideDrag.unitId === unit.id ? '#ffeb3b' : '#90caf9'}
+                      stroke="#000000"
+                      strokeWidth={1}
+                      cornerRadius={3}
+                      onMouseDown={(e) => startSlideDrag(unit.id, e)}
+                      onTouchStart={(e) => startSlideDrag(unit.id, e)}
+                    />
+                  </>
+                )}
+              </Group>
+            ))}
           </Layer>
         </Stage>
       </div>
