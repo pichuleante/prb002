@@ -6,26 +6,7 @@ import './App.css'
  * ============================================================
  * DOCUMENTACIÓN DE LÓGICA Y CONTROL DE CAMBIOS - TACTICAL BOARD
  * ============================================================
- * * --- REGLAS DE ORO DEL SISTEMA ---
- * 1. COORDENADAS: El "Mundo" (Mapa) es independiente del "Stage" (Vista).
- * Fórmula: WorldPos = (PointerPos - StagePos) / Scale
- * 2. PIVOT DE ROTACIÓN: 
- * - 'Right': Punto fijo en la esquina delantera derecha de la unidad.
- * - 'Left': Punto fijo en la esquina delantera izquierda (calculado con UNIT_WIDTH).
- * 3. ORIENTACIÓN: 0° es "Norte" (hacia arriba en el eje Y). 
- * Cálculo: Math.atan2(dx, -dy) -> (angle * 180 / PI).
- * * --- CHECKLIST DE VERIFICACIÓN (QA) ---
- * [X] Zoom: Centrado en la posición del puntero del ratón.
- * [X] Movimiento: Drag & Drop libre cuando no hay herramientas activas.
- * [X] Rotación: Restringida a un arco de 90° desde el pivote frontal.
- * [X] Avance: Movimiento lineal forzado en el eje local "Y" de la unidad.
- * [X] Slide: Movimiento lateral forzado en el eje local "X" de la unidad.
- * [X] Variaciones: Giros instantáneos de 90° y 180° con reposicionamiento de pivot.
- * * --- HISTORIAL DE CAMBIOS ---
- * v1.0 - Base estable con rotación, avance y slide.
- * v1.1 - Refactorización de estructura y adición de cabecera de control.
- * v1.2 - Restauración de Variaciones (90° L/R) y Media Vuelta (180°). (ACTUAL)
- * ============================================================
+ * v1.3 - Corrección de error de sintaxis Babel (Unexpected Token) y limpieza de handlers.
  */
 
 const SETTINGS = {
@@ -53,6 +34,15 @@ function App() {
   const [advanceDrag, setAdvanceDrag] = useState({ active: false, unitId: null, startPointer: { x: 0, y: 0 }, startPosition: { x: 0, y: 0 }, rotationAtStart: 0 })
   const [slideDrag, setSlideDrag] = useState({ active: false, unitId: null, startPointer: { x: 0, y: 0 }, startPosition: { x: 0, y: 0 }, rotationAtStart: 0 })
 
+  // --- HANDLERS AUXILIARES ---
+  const getWorldPointer = (stage) => {
+    const pointer = stage.getPointerPosition();
+    return {
+      x: (pointer.x - stagePosition.x) / stageScale,
+      y: (pointer.y - stagePosition.y) / stageScale
+    };
+  };
+
   const handleWheel = useCallback((e) => {
     e.evt.preventDefault()
     const stage = e.target.getStage()
@@ -67,7 +57,6 @@ function App() {
     setStagePosition({ x: pointer.x - mousePointTo.x * newScale, y: pointer.y - mousePointTo.y * newScale })
   }, [stageScale, stagePosition])
 
-  // --- LÓGICA DE VARIACIONES (INSTANTÁNEAS) ---
   const handleVariation = (unitId, type) => {
     setUnits(prev => prev.map(unit => {
       if (unit.id !== unitId) return unit
@@ -89,7 +78,6 @@ function App() {
         newPos.y += SETTINGS.UNIT.HEIGHT * Math.cos(rad) + SETTINGS.UNIT.WIDTH * Math.sin(rad)
         nextRotation += 180
       }
-
       return { ...unit, rotation: nextRotation, position: newPos }
     }))
   }
@@ -134,21 +122,24 @@ function App() {
   const startRotationDrag = (unitId, e, pivot) => {
     e.cancelBubble = true
     const unit = units.find(u => u.id === unitId)
-    const pointer = e.target.getStage().getPointerPosition()
-    const wX = (pointer.x - stagePosition.x) / stageScale, wY = (pointer.y - stagePosition.y) / stageScale
+    const wPos = getWorldPointer(e.target.getStage());
     const rad = (unit.rotation * Math.PI) / 180
     let pX = unit.position.x, pY = unit.position.y
     if (pivot === 'left') { pX += SETTINGS.UNIT.WIDTH * Math.cos(rad); pY += SETTINGS.UNIT.WIDTH * Math.sin(rad); }
-    setRotationDrag({ active: true, unitId, pivot, startAngle: angleFromPivot(pX, pY, wX, wY), startRotation: unit.rotation, pivotX: pX, pivotY: pY })
+    setRotationDrag({ active: true, unitId, pivot, startAngle: angleFromPivot(pX, pY, wPos.x, wPos.y), startRotation: unit.rotation, pivotX: pX, pivotY: pY })
   }
 
-  const handlePointerEnd = () => { setRotationDrag(p => ({ ...p, active: false })); setAdvanceDrag(p => ({ ...p, active: false })); setSlideDrag(p => ({ ...p, active: false })); }
+  const handlePointerEnd = () => { 
+    setRotationDrag(p => ({ ...p, active: false })); 
+    setAdvanceDrag(p => ({ ...p, active: false })); 
+    setSlideDrag(p => ({ ...p, active: false })); 
+  }
 
   const isDraggingAny = rotationDrag.active || advanceDrag.active || slideDrag.active
 
   return (
     <div className="tactical-board-wrapper">
-      <h1 className="board-title">Mesa táctica v1.2</h1>
+      <h1 className="board-title">Mesa táctica v1.3</h1>
       <div className="stage-container">
         <Stage
           width={SETTINGS.VIEW.WIDTH} height={SETTINGS.VIEW.HEIGHT}
@@ -169,18 +160,35 @@ function App() {
                   <>
                     <Rect x={SETTINGS.UNIT.WIDTH - 10} y={-10} width={16} height={16} fill="#c9a227" cornerRadius={3} onMouseDown={(e) => startRotationDrag(unit.id, e, 'right')} />
                     <Rect x={-6} y={-10} width={16} height={16} fill="#c9a227" cornerRadius={3} onMouseDown={(e) => startRotationDrag(unit.id, e, 'left')} />
-                    
-                    {/* Botón Variación Izquierda */}
                     <Rect x={-18} y={SETTINGS.UNIT.HEIGHT / 2 - 9} width={14} height={18} fill="#ffab91" cornerRadius={3} onMouseDown={(e) => { e.cancelBubble = true; handleVariation(unit.id, 'left'); }} />
-                    
-                    {/* Botón Variación Derecha */}
                     <Rect x={SETTINGS.UNIT.WIDTH + 4} y={SETTINGS.UNIT.HEIGHT / 2 - 9} width={14} height={18} fill="#ffab91" cornerRadius={3} onMouseDown={(e) => { e.cancelBubble = true; handleVariation(unit.id, 'right'); }} />
-                    
-                    {/* Botón Media Vuelta */}
                     <Rect x={SETTINGS.UNIT.WIDTH / 2 - 6} y={SETTINGS.UNIT.HEIGHT + 4} width={12} height={18} fill="#ce93d8" cornerRadius={3} onMouseDown={(e) => { e.cancelBubble = true; handleVariation(unit.id, 'half'); }} />
 
+                    {/* Avance */}
                     <Rect x={SETTINGS.UNIT.WIDTH / 2 - 6} y={-18} width={12} height={18} fill="#4dd0e1" cornerRadius={3} 
                       onMouseDown={(e) => {
-                        e.cancelBubble = true
-                        const p = e.target.getStage().getPointerPosition()
-                        setAdvanceDrag
+                        e.cancelBubble = true;
+                        const wPos = getWorldPointer(e.target.getStage());
+                        setAdvanceDrag({ active: true, unitId: unit.id, startPointer: wPos, startPosition: unit.position, rotationAtStart: unit.rotation });
+                      }} 
+                    />
+                    {/* Slide */}
+                    <Rect x={SETTINGS.UNIT.WIDTH / 2 - 6} y={SETTINGS.UNIT.HEIGHT / 2 - 6} width={12} height={12} fill="#90caf9" cornerRadius={3}
+                      onMouseDown={(e) => {
+                        e.cancelBubble = true;
+                        const wPos = getWorldPointer(e.target.getStage());
+                        setSlideDrag({ active: true, unitId: unit.id, startPointer: wPos, startPosition: unit.position, rotationAtStart: unit.rotation });
+                      }}
+                    />
+                  </>
+                )}
+              </Group>
+            ))}
+          </Layer>
+        </Stage>
+      </div>
+    </div>
+  )
+}
+
+export default App
