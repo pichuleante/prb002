@@ -1,0 +1,57 @@
+.auth-icon {
+  position: fixed;
+  top: 16px;
+  right: 16px;
+  width: 44px;
+  height: 44px;
+  border-radius: 50%;
+  background: #0b5cff;
+  color: white;
+  border: none;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  box-shadow: 0 4px 10px rgba(11,92,255,0.2);
+  cursor: pointer;
+}
+
+.auth-icon:hover {
+  transform: translateY(-1px);
+}
+
+.auth-modal-overlay {
+  position: fixed;
+  inset: 0;
+  background: rgba(0,0,0,0.4);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 1000;
+}
+
+.auth-modal {
+  background: white;
+  padding: 20px;
+  width: 320px;
+  border-radius: 8px;
+  box-shadow: 0 10px 30px rgba(0,0,0,0.2);
+  position: relative;
+}
+
+.auth-close {
+  position: absolute;
+  top: 8px;
+  right: 8px;
+  border: none;
+  background: transparent;
+  font-size: 16px;
+  cursor: pointer;
+}
+
+.auth-tabs { display:flex; gap:8px; margin-bottom:12px }
+.auth-tabs button { flex:1; padding:8px; border-radius:6px; border:1px solid #ddd; background:#f7f7f7; cursor:pointer }
+.auth-tabs button.active { background:#0b5cff; color:white; border-color:#0b5cff }
+.auth-form label { display:block; font-size:13px; margin-bottom:8px }
+.auth-form input { width:100%; padding:8px; margin-top:4px; box-sizing:border-box }
+.auth-action { margin-top:10px; width:100%; padding:10px; background:#0b5cff; color:white; border:none; border-radius:6px; cursor:pointer }
+.auth-error { color: #b00020; margin-top:6px; font-size:13px }
