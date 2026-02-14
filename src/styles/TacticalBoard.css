@@ -1,0 +1,41 @@
+.tactical-board-wrapper {
+  display: flex;
+  flex-direction: column;
+  height: 100%;
+}
+
+.board-controls {
+  padding: 1rem;
+  border-bottom: 1px solid #eee;
+  display: flex;
+  gap: 0.5rem;
+}
+
+.board-controls button {
+  padding: 0.5rem 1rem;
+  background: #3d5c3a;
+  color: white;
+  border: none;
+  border-radius: 4px;
+  cursor: pointer;
+  font-size: 0.9rem;
+  transition: all 0.2s;
+}
+
+.board-controls button:hover {
+  background: #2a3f28;
+}
+
+.stage-container {
+  flex: 1;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  background: #f5f5f5;
+  border-radius: 4px;
+  overflow: hidden;
+}
+
+.stage-container canvas {
+  display: block;
+}
