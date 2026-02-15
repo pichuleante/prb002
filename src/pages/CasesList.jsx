@@ -36,7 +36,7 @@ export default function CasesList() {
 
     try {
       const { data, error } = await supabase
-        .from(casos')
+        .from('casos')
         .insert([{ title, description }])
         .select()
 
