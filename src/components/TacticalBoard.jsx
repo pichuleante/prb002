@@ -104,7 +104,7 @@ export default function TacticalBoard({ caseId, initialUnits = [], onUnitsChange
           ? { ...unit, position: { x: node.x(), y: node.y() } }
           : unit
       )
-      onUnitsChange?.(updated)
+      //onUnitsChange?.(updated)
       return updated
     })
   }, [onUnitsChange])
