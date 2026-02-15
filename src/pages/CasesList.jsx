@@ -109,7 +109,7 @@ export default function CasesList() {
             <div key={caseItem.id} className="case-card">
               <div className="case-info">
                 <h2>{caseItem.nombre}</h2>
-                {caseItem.description && <p>{caseItem.description}</p>}
+                {caseItem.descripcion && <p>{caseItem.descripcion}</p>}
                 <small>{new Date(caseItem.created_at).toLocaleDateString()}</small>
               </div>
               <div className="case-actions">
