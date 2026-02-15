@@ -51,8 +51,7 @@ export default function CaseEditor() {
         .from('casos')
         .update({
           nombre,
-          descripcion,
-          updated_at: new Date().toISOString()
+          descripcion
         })
         .eq('id', id)
 
