@@ -19,7 +19,7 @@ export default function CaseEditor() {
   const loadCase = async () => {
     try {
       const { data, error } = await supabase
-        .from('cases')
+        .from('casos')
         .select('*')
         .eq('id', id)
         .maybeSingle()
