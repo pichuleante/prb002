@@ -7,8 +7,8 @@ export default function CasesList() {
   const [cases, setCases] = useState([])
   const [loading, setLoading] = useState(true)
   const [showForm, setShowForm] = useState(false)
-  const [title, setTitle] = useState('')
-  const [description, setDescription] = useState('')
+  const [nombre, setTitle] = useState('')
+  const [descripcion, setDescription] = useState('')
 
   useEffect(() => {
     loadCases()
