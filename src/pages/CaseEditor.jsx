@@ -7,8 +7,8 @@ export default function CaseEditor() {
   const { id } = useParams()
   const navigate = useNavigate()
   const [caseData, setCaseData] = useState(null)
-  const [title, setTitle] = useState('')
-  const [description, setDescription] = useState('')
+  const [nombre, setTitle] = useState('')
+  const [descripcion, setDescription] = useState('')
   const [loading, setLoading] = useState(true)
   const [saving, setSaving] = useState(false)
 
@@ -43,7 +43,7 @@ export default function CaseEditor() {
 
   const handleSave = async (e) => {
     e.preventDefault()
-    if (!title.trim()) return
+    if (!nombre.trim()) return
 
     setSaving(true)
     try {
@@ -81,7 +81,7 @@ export default function CaseEditor() {
           <input
             id="title"
             type="text"
-            value={title}
+            value={nombre}
             onChange={(e) => setTitle(e.target.value)}
             required
           />
@@ -91,7 +91,7 @@ export default function CaseEditor() {
           <label htmlFor="description">Descripción</label>
           <textarea
             id="description"
-            value={description}
+            value={descripcion}
             onChange={(e) => setDescription(e.target.value)}
             rows="5"
           />
