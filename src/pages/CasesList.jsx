@@ -32,12 +32,12 @@ export default function CasesList() {
 
   const handleCreateCase = async (e) => {
     e.preventDefault()
-    if (!title.trim()) return
+    if (!nombre.trim()) return
 
     try {
       const { data, error } = await supabase
         .from('casos')
-        .insert([{ title, description }])
+        .insert([{ nombre, descripcion }])
         .select()
 
       if (error) throw error
