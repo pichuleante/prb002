@@ -19,17 +19,18 @@ export default function TacticalView() {
   const loadCaseData = async () => {
     try {
       const [caseRes, unitsRes, commentsRes] = await Promise.all([
-        supabase.from('casos').select('*').eq('id', id).maybeSingle()
-        
+        supabase.from('cases').select('*').eq('id', id).maybeSingle(),
+        supabase.from('units').select('*').eq('case_id', id),
+        supabase.from('comments').select('*').eq('case_id', id).order('created_at', { ascending: false })
       ])
 
       if (caseRes.error) throw caseRes.error
-      //if (unitsRes.error) throw unitsRes.error
-      //if (commentsRes.error) throw commentsRes.error
+      if (unitsRes.error) throw unitsRes.error
+      if (commentsRes.error) throw commentsRes.error
 
       setCaseData(caseRes.data)
-      //setUnits(unitsRes.data || [])
-      //setComments(commentsRes.data || []) 
+      setUnits(unitsRes.data || [])
+      setComments(commentsRes.data || [])
     } catch (error) {
       console.error('Error loading case data:', error)
     } finally {
@@ -93,8 +94,8 @@ export default function TacticalView() {
     } catch (error) {
       console.error('Error deleting comment:', error)
     }
-  }*/
-
+  }
+*/
   if (loading) return <div className="tactical-view"><p>Loading...</p></div>
   if (!caseData) return <div className="tactical-view"><p>Case not found</p></div>
 
