@@ -37,7 +37,7 @@ export default function TacticalView() {
       setLoading(false)
     }
   }
-/*
+
   const handleSaveUnits = async (updatedUnits) => {
     try {
       await supabase.from('units').delete().eq('case_id', id)
@@ -95,7 +95,7 @@ export default function TacticalView() {
       console.error('Error deleting comment:', error)
     }
   }
-*/
+
   if (loading) return <div className="tactical-view"><p>Loading...</p></div>
   if (!caseData) return <div className="tactical-view"><p>Case not found</p></div>
 
