@@ -108,7 +108,7 @@ export default function CasesList() {
           cases.map(caseItem => (
             <div key={caseItem.id} className="case-card">
               <div className="case-info">
-                <h2>{caseItem.title}</h2>
+                <h2>{caseItem.nombre}</h2>
                 {caseItem.description && <p>{caseItem.description}</p>}
                 <small>{new Date(caseItem.created_at).toLocaleDateString()}</small>
               </div>
