@@ -31,8 +31,8 @@ export default function CaseEditor() {
       }
 
       setCaseData(data)
-      setTitle(data.title)
-      setDescription(data.description || '')
+      setTitle(data.nombre)
+      setDescription(data.descripcion || '')
     } catch (error) {
       console.error('Error loading case:', error)
       navigate('/')
