@@ -19,7 +19,7 @@ export default function TacticalView() {
   const loadCaseData = async () => {
     try {
       const [caseRes, unitsRes, commentsRes] = await Promise.all([
-        supabase.from('casos').select('*').eq('id', id).maybeSingle(),
+        supabase.from('casos').select('*').eq('id', id).maybeSingle()
         )
       ])
 
