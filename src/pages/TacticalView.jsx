@@ -20,7 +20,7 @@ export default function TacticalView() {
     try {
       const [caseRes, unitsRes, commentsRes] = await Promise.all([
         supabase.from('casos').select('*').eq('id', id).maybeSingle()
-        )
+        
       ])
 
       if (caseRes.error) throw caseRes.error
