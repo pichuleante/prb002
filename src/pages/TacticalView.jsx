@@ -25,12 +25,12 @@ export default function TacticalView() {
       ])
 
       if (caseRes.error) throw caseRes.error
-      if (unitsRes.error) throw unitsRes.error
-      if (commentsRes.error) throw commentsRes.error
+      //if (unitsRes.error) throw unitsRes.error
+     //if (commentsRes.error) throw commentsRes.error
 
       setCaseData(caseRes.data)
-      setUnits(unitsRes.data || [])
-      setComments(commentsRes.data || [])
+      //setUnits(unitsRes.data || [])
+      //setComments(commentsRes.data || [])
     } catch (error) {
       console.error('Error loading case data:', error)
     } finally {
