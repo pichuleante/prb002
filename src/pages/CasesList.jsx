@@ -17,7 +17,7 @@ export default function CasesList() {
   const loadCases = async () => {
     try {
       const { data, error } = await supabase
-        .from('cases')
+        .from('casos')
         .select('*')
         .order('created_at', { ascending: false })
 
@@ -36,7 +36,7 @@ export default function CasesList() {
 
     try {
       const { data, error } = await supabase
-        .from('cases')
+        .from(casos')
         .insert([{ title, description }])
         .select()
 
@@ -56,7 +56,7 @@ export default function CasesList() {
 
     try {
       const { error } = await supabase
-        .from('cases')
+        .from('casos')
         .delete()
         .eq('id', id)
 
