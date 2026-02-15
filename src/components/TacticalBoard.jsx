@@ -152,7 +152,7 @@ export default function TacticalBoard({ caseId, initialUnits = [], onUnitsChange
 
             return { ...unit, rotation: next, position: newPosition }
           })
-          onUnitsChange?.(updated)
+          //onUnitsChange?.(updated)
           return updated
         })
         return
@@ -178,7 +178,7 @@ export default function TacticalBoard({ caseId, initialUnits = [], onUnitsChange
               ? { ...unit, position: { x: newX, y: newY } }
               : unit
           )
-          onUnitsChange?.(updated)
+          //onUnitsChange?.(updated)
           return updated
         })
         return
@@ -206,7 +206,7 @@ export default function TacticalBoard({ caseId, initialUnits = [], onUnitsChange
               ? { ...unit, position: { x: newX, y: newY } }
               : unit
           )
-          onUnitsChange?.(updated)
+          //onUnitsChange?.(updated)
           return updated
         })
       }
