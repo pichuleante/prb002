@@ -303,10 +303,7 @@ export default function TacticalBoard({ caseId, initialUnits = [], onUnitsChange
   )
 
   const handlePointerEnd = useCallback(() => {
-    
-    if (rotationDrag.active || advanceDrag.active || slideDrag.active) {
-      onUnitsChange?.(updated)
-    }   
+   
     setRotationDrag((prev) => ({ ...prev, active: false, unitId: null, pivot: null }))
     setAdvanceDrag((prev) => ({ ...prev, active: false, unitId: null }))
     setSlideDrag((prev) => ({ ...prev, active: false, unitId: null }))
