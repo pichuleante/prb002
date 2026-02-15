@@ -87,13 +87,13 @@ export default function CasesList() {
           <input
             type="text"
             placeholder="Título del caso"
-            value={title}
+            value={nombre}
             onChange={(e) => setTitle(e.target.value)}
             required
           />
           <textarea
             placeholder="Descripción (opcional)"
-            value={description}
+            value={descripcion}
             onChange={(e) => setDescription(e.target.value)}
             rows="3"
           />
