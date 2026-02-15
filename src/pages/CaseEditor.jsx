@@ -48,7 +48,7 @@ export default function CaseEditor() {
     setSaving(true)
     try {
       const { error } = await supabase
-        .from('cases')
+        .from('casos')
         .update({
           nombre,
           descripcion,
