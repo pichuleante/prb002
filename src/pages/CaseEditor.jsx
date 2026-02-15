@@ -50,8 +50,8 @@ export default function CaseEditor() {
       const { error } = await supabase
         .from('cases')
         .update({
-          title,
-          description,
+          nombre,
+          descripcion,
           updated_at: new Date().toISOString()
         })
         .eq('id', id)
