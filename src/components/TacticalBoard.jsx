@@ -8,12 +8,32 @@ const MAP_WIDTH = 3000
 const MAP_HEIGHT = 2000
 const VIEW_WIDTH = 700
 const VIEW_HEIGHT = 500
+const ANGLE_TOLERANCE = 5
 
 function angleFromPivot(pivotX, pivotY, pointerX, pointerY) {
   const dx = pointerX - pivotX
   const dy = pointerY - pivotY
   const angleRad = Math.atan2(dx, -dy)
   return (angleRad * 180) / Math.PI
+}
+
+function angleDiff(a1, a2) {
+  let d = a2 - a1
+  if (d > 180) d -= 360
+  if (d < -180) d += 360
+  return Math.abs(d)
+}
+
+function boundingBox(units) {
+  if (!units.length) return null
+  let minX = Infinity, minY = Infinity, maxX = -Infinity, maxY = -Infinity
+  units.forEach(u => {
+    minX = Math.min(minX, u.position.x)
+    minY = Math.min(minY, u.position.y)
+    maxX = Math.max(maxX, u.position.x + UNIT_WIDTH)
+    maxY = Math.max(maxY, u.position.y + UNIT_HEIGHT)
+  })
+  return { x: minX, y: minY, w: maxX - minX, h: maxY - minY }
 }
 
 export default function TacticalBoard({ caseId, initialUnits = [], onUnitsChange }) {
@@ -387,11 +407,32 @@ export default function TacticalBoard({ caseId, initialUnits = [], onUnitsChange
     setStagePosition({ x: 0, y: 0 })
   }, [])
 
-  const handleUnitSelect = useCallback((unitId) => {
-    setUnits(prev => prev.map(unit => ({
-      ...unit,
-      isSelected: unit.id === unitId
-    })))
+  const handleUnitSelect = useCallback((unitId, shiftKey) => {
+    setUnits(prev => {
+      if (!shiftKey) {
+        return prev.map(u => ({ ...u, isSelected: u.id === unitId }))
+      }
+
+      const clickedUnit = prev.find(u => u.id === unitId)
+      if (!clickedUnit) return prev
+
+      if (clickedUnit.isSelected) {
+        return prev.map(u => (u.id === unitId ? { ...u, isSelected: false } : u))
+      }
+
+      const baseRotation = clickedUnit.rotation
+      const compatible = prev.filter(u => angleDiff(u.rotation, baseRotation) <= ANGLE_TOLERANCE && u.id !== unitId)
+
+      if (compatible.length === 0) {
+        return prev.map(u => ({ ...u, isSelected: u.id === unitId }))
+      }
+
+      return prev.map(u => {
+        if (u.id === unitId) return { ...u, isSelected: true }
+        if (compatible.some(c => c.id === u.id)) return { ...u, isSelected: true }
+        return u
+      })
+    })
   }, [])
 
   const handleDeselectAll = useCallback(() => {
@@ -402,6 +443,9 @@ export default function TacticalBoard({ caseId, initialUnits = [], onUnitsChange
   }, [])
 
   const isDraggingAny = rotationDrag.active || advanceDrag.active || slideDrag.active
+  const selectedUnits = units.filter(u => u.isSelected)
+  const bbox = selectedUnits.length > 0 ? boundingBox(selectedUnits) : null
+  const avgRotation = selectedUnits.length > 0 ? selectedUnits.reduce((sum, u) => sum + u.rotation, 0) / selectedUnits.length : 0
 
   return (
     <div className="tactical-board-wrapper">
@@ -432,6 +476,13 @@ export default function TacticalBoard({ caseId, initialUnits = [], onUnitsChange
           onMouseLeave={handlePointerEnd}
           onMouseDown={handleDeselectAll}
           onTouchStart={handleDeselectAll}
+          onKeyDown={(e) => {
+            if (e.evt.code === 'Space') {
+              e.evt.preventDefault()
+              handleDeselectAll()
+            }
+          }}
+          tabIndex={0}
         >
           <Layer>
             <Rect
@@ -442,6 +493,22 @@ export default function TacticalBoard({ caseId, initialUnits = [], onUnitsChange
               fill="#1e3320"
               listening={false}
             />
+
+            {bbox && (
+              <Group rotation={avgRotation} x={bbox.x + bbox.w / 2} y={bbox.y + bbox.h / 2}>
+                <Rect
+                  x={-bbox.w / 2}
+                  y={-bbox.h / 2}
+                  width={bbox.w}
+                  height={bbox.h}
+                  fill="rgba(100, 200, 255, 0.08)"
+                  stroke="#4dd0e1"
+                  strokeWidth={2}
+                  dash={[6, 4]}
+                  listening={false}
+                />
+              </Group>
+            )}
 
             {units.map(unit => (
               <Group
@@ -454,11 +521,11 @@ export default function TacticalBoard({ caseId, initialUnits = [], onUnitsChange
                 onDragEnd={(e) => handleDragEnd(unit.id, e)}
                 onMouseDown={(e) => {
                   e.cancelBubble = true
-                  handleUnitSelect(unit.id)
+                  handleUnitSelect(unit.id, e.evt.shiftKey)
                 }}
                 onTouchStart={(e) => {
                   e.cancelBubble = true
-                  handleUnitSelect(unit.id)
+                  handleUnitSelect(unit.id, e.evt.shiftKey)
                 }}
               >
                 <Rect
