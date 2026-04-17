@@ -24,15 +24,40 @@ function angleDiff(a1, a2) {
   return Math.abs(d)
 }
 
+function getRotatedCorners(unit) {
+  const rad = (unit.rotation * Math.PI) / 180
+  const cos = Math.cos(rad)
+  const sin = Math.sin(rad)
+
+  const corners = [
+    { x: 0, y: 0 },
+    { x: UNIT_WIDTH, y: 0 },
+    { x: UNIT_WIDTH, y: UNIT_HEIGHT },
+    { x: 0, y: UNIT_HEIGHT }
+  ]
+
+  return corners.map(c => ({
+    x: unit.position.x + c.x * cos - c.y * sin,
+    y: unit.position.y + c.x * sin + c.y * cos
+  }))
+}
+
 function boundingBox(units) {
   if (!units.length) return null
-  let minX = Infinity, minY = Infinity, maxX = -Infinity, maxY = -Infinity
+
+  let allCorners = []
   units.forEach(u => {
-    minX = Math.min(minX, u.position.x)
-    minY = Math.min(minY, u.position.y)
-    maxX = Math.max(maxX, u.position.x + UNIT_WIDTH)
-    maxY = Math.max(maxY, u.position.y + UNIT_HEIGHT)
+    allCorners = allCorners.concat(getRotatedCorners(u))
   })
+
+  let minX = Infinity, minY = Infinity, maxX = -Infinity, maxY = -Infinity
+  allCorners.forEach(c => {
+    minX = Math.min(minX, c.x)
+    minY = Math.min(minY, c.y)
+    maxX = Math.max(maxX, c.x)
+    maxY = Math.max(maxY, c.y)
+  })
+
   return { x: minX, y: minY, w: maxX - minX, h: maxY - minY }
 }
 
