@@ -470,6 +470,7 @@ export default function TacticalBoard({ caseId, initialUnits = [], onUnitsChange
   const isDraggingAny = rotationDrag.active || advanceDrag.active || slideDrag.active
   const selectedUnits = units.filter(u => u.isSelected)
   const bbox = selectedUnits.length > 0 ? boundingBox(selectedUnits) : null
+  const avgRotation = selectedUnits.length > 0 ? selectedUnits.reduce((sum, u) => sum + u.rotation, 0) / selectedUnits.length : 0
 
   return (
     <div className="tactical-board-wrapper">
@@ -519,17 +520,19 @@ export default function TacticalBoard({ caseId, initialUnits = [], onUnitsChange
             />
 
             {bbox && (
-              <Rect
-                x={bbox.x}
-                y={bbox.y}
-                width={bbox.w}
-                height={bbox.h}
-                fill="rgba(100, 200, 255, 0.08)"
-                stroke="#4dd0e1"
-                strokeWidth={2}
-                dash={[6, 4]}
-                listening={false}
-              />
+              <Group rotation={avgRotation} x={bbox.x + bbox.w / 2} y={bbox.y + bbox.h / 2}>
+                <Rect
+                  x={-bbox.w / 2}
+                  y={-bbox.h / 2}
+                  width={bbox.w}
+                  height={bbox.h}
+                  fill="rgba(100, 200, 255, 0.08)"
+                  stroke="#4dd0e1"
+                  strokeWidth={2}
+                  dash={[6, 4]}
+                  listening={false}
+                />
+              </Group>
             )}
 
             {units.map(unit => (
